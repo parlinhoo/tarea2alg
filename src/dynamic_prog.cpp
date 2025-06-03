@@ -57,8 +57,6 @@ int editDistanceDP(std::string str1, std::string str2) {
     char_list list1;
     char_list list2;
     
-    std::cout << str1 << "\n" << str2 << "\n";
-
     size_t index = 0;
     do {
 
