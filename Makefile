@@ -3,8 +3,11 @@ COMP = g++
 
 ALG_OBJS = rec.o memo.o dp.o dpo.o
 
-main: src/test.cpp inc/test.h ${ALG_OBJS}
-	${COMP} ${FLAGS} -o test.exe src/test.cpp ${ALG_OBJS}
+main: main.cpp ${ALG_OBJS} main_alg.o
+	${COMP} ${FLAGS} main.cpp ${ALG_OBJS} main_alg.o -o main.exe
+
+main_alg.o: src/edit_distance.cpp inc/edit_distance.h
+	${COMP} ${FLAGS} -c src/edit_distance.cpp -o main_alg.o
 
 rec.o: src/recursive.cpp inc/algorithms.h
 	${COMP} ${FLAGS} -c src/recursive.cpp -o rec.o

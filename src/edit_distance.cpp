@@ -1,4 +1,4 @@
-#include "../inc/test.h"
+#include "../inc/edit_distance.h"
 #include "../inc/algorithms.h"
 
 #include <iostream>
@@ -23,8 +23,4 @@ int EditDistanceDeleteInsert(std::string str1, std::string str2, algorithm alg) 
     std::cout << "Algoritmo invalido\n";
 
     return -1;    
-}
-
-int main() {
-    std::cout << "xd\n";
 }
