@@ -4,7 +4,9 @@
 
 int main() {
     
-    std::cout << EditDistanceDeleteInsert(std::string("2"), std::string("4"), recursive) << "\n";
+    int distance = EditDistanceDeleteInsert(std::string("heal"), std::string("relax"), dp);
+
+    std::cout << "Distance: " << distance << "\n";
 
     return 0;
 }
