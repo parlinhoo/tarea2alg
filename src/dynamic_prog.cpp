@@ -40,12 +40,6 @@ public:
         return found;
     }
 
-    void pop_back(int n = 1) {
-        for (int i = 0; i < n; i++) {
-            this->container.pop_back();
-        }
-    } 
-
     void pop_back_until_char(char chr) {
         if (this->container.empty()) return;
         char actual;
