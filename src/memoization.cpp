@@ -2,7 +2,7 @@
 #include <utility>
 #include <map>
 
-std::string recursive_lcs_memo(std::string str1, std::string str2,
+std::string recursiveLCSMemo(std::string str1, std::string str2,
         size_t str1_len, size_t str2_len,
         std::map<std::pair<size_t, size_t>, std::string>& lcs_memo) {
     if (!str1_len || !str2_len) {
@@ -15,7 +15,7 @@ std::string recursive_lcs_memo(std::string str1, std::string str2,
         if (lcs_memo.count(key)) {
             ret_string = lcs_memo[key];
         } else {
-            ret_string = recursive_lcs_memo(str1, str2, str1_len - 1, str2_len - 1, lcs_memo);
+            ret_string = recursiveLCSMemo(str1, str2, str1_len - 1, str2_len - 1, lcs_memo);
             lcs_memo[key] = ret_string;
         }
 
@@ -30,14 +30,14 @@ std::string recursive_lcs_memo(std::string str1, std::string str2,
         if (lcs_memo.count(res_1_key)) {
             res_1 = lcs_memo[res_1_key];
         } else {
-            res_1 = recursive_lcs_memo(str1, str2, str1_len - 1, str2_len, lcs_memo);
+            res_1 = recursiveLCSMemo(str1, str2, str1_len - 1, str2_len, lcs_memo);
             lcs_memo[res_1_key] = res_1;
         }
 
         if (lcs_memo.count(res_2_key)) {
             res_2 = lcs_memo[res_2_key];
         } else {
-            res_2 = recursive_lcs_memo(str1, str2, str1_len, str2_len - 1, lcs_memo);
+            res_2 = recursiveLCSMemo(str1, str2, str1_len, str2_len - 1, lcs_memo);
             lcs_memo[res_2_key] = res_2;
         }
 
@@ -49,11 +49,11 @@ std::string recursive_lcs_memo(std::string str1, std::string str2,
     }
 }
 
-std::string lcs_memo(std::string str1, std::string str2) {
+std::string LCSMemo(std::string str1, std::string str2) {
     std::map<std::pair<size_t, size_t>, std::string> lcs_memo;
-    return recursive_lcs_memo(str1, str2, str1.size(), str2.size(), lcs_memo);
+    return recursiveLCSMemo(str1, str2, str1.size(), str2.size(), lcs_memo);
 }
 
 int editDistanceMemo(std::string str1, std::string str2) {
-    return str1.size() + str2.size() - 2 * lcs_memo(str1, str2).size();
+    return str1.size() + str2.size() - 2 * LCSMemo(str1, str2).size();
 }
