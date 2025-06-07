@@ -1,10 +1,10 @@
-FLAGS = -Wall
+FLAGS = -Wall -Wextra -g
 COMP = g++
 
 ALG_OBJS = rec.o memo.o dp.o dpo.o
 
-main: main.cpp ${ALG_OBJS} main_alg.o
-	${COMP} ${FLAGS} main.cpp ${ALG_OBJS} main_alg.o -o main.exe
+main: main.cpp ${ALG_OBJS} main_alg.o testing.o
+	${COMP} ${FLAGS} main.cpp ${ALG_OBJS} main_alg.o testing.o -o main.exe
 
 main_alg.o: src/edit_distance.cpp inc/edit_distance.h
 	${COMP} ${FLAGS} -c src/edit_distance.cpp -o main_alg.o
@@ -20,3 +20,6 @@ dp.o: src/dynamic_prog.cpp inc/algorithms.h
 
 dpo.o: src/dynamic_prog_opt.cpp inc/algorithms.h
 	${COMP} ${FLAGS} -c src/dynamic_prog_opt.cpp -o dpo.o
+
+testing.o: src/testing.cpp inc/testing.h
+	${COMP} ${FLAGS} -c src/testing.cpp -o testing.o
