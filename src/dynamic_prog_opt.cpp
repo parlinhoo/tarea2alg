@@ -12,8 +12,8 @@ int editDistanceDPOptimized(std::string str1, std::string str2) {
     std::vector<unsigned int> upper_row(size2+1, 0);
     std::vector<unsigned int> actual_row(size2+1, 0);
 
-    for (size_t i = 0; i < size1+1; i++) {
-        for (size_t j = 0; j < size2+1; j++) {
+    for (size_t i = 0; i < size1; i++) {
+        for (size_t j = 0; j < size2; j++) {
             if (str1[i] == str2[j]) {
                 actual_row[j+1] = upper_row[j] + 1;
             }
@@ -21,7 +21,7 @@ int editDistanceDPOptimized(std::string str1, std::string str2) {
                 actual_row[j+1] = actual_row[j] > upper_row[j+1] ? actual_row[j] : upper_row[j+1];
             }
         }
-        upper_row = actual_row;
+        upper_row = std::vector<unsigned int>(actual_row);
         actual_row = std::vector<unsigned int>(size2+1, 0);
     }
 
