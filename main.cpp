@@ -9,6 +9,10 @@ int main() {
 
 
     testBaseCases();
+    testExtracts();
+    
+    
+    
     // std::vector<std::string> test_cases;
 
     // test_cases.push_back("conflict");

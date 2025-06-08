@@ -4,3 +4,4 @@
 #include "algorithms.h"
 
 void testBaseCases();
+void testExtracts();
