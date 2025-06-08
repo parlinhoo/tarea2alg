@@ -1,12 +1,42 @@
 #include "../inc/testing.h"
+#include <cstring>
 #include <tuple>
-#include <type_traits>
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <chrono>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/resource.h>
 #include "../inc/edit_distance.h"
+
+size_t getRSS() {
+    std::ifstream statm("/proc/self/status");
+    if (!statm) {
+        std::cerr << "Failed to open" << strerror(errno) << "\n";
+        return 0;
+    }
+
+    std::string line;
+    while (std::getline(statm, line)) {
+        if (line.find("VmRSS:", 0) == 0) {
+            std::istringstream iss(line);
+            std::string label;
+            size_t kb;
+            std::string unit;
+            iss >> label >> kb >> unit;
+            if (unit != "kB") {
+                std::cerr << "unexpected unit " << unit << "\n";
+                return 0;
+            }
+            return kb * 1024; // bytes
+        }
+    }
+
+    std::cerr << "VmRSS not found in /proc/self/status\n";
+    return 0;
+}
 
 void saveToCSV(
         std::vector<std::tuple<std::string, std::string, std::string, size_t, size_t, size_t, size_t>>&
@@ -31,24 +61,46 @@ void saveToCSV(
             << std::get<2>(row) << ','
             << std::get<3>(row) << ','
             << std::get<4>(row) << ','
-            << std::get<5>(row) << '\n';
+            << std::get<5>(row) << ','
+            << std::get<6>(row) << '\n';
     }
     outFile.close();
     
 }
 
-std::tuple<int64_t, size_t> testAlgorithm(std::string& str1, std::string& str2, algorithm algo) {
+std::tuple<int64_t, size_t, int> testAlgorithm(std::string& str1, std::string& str2, algorithm algo) {
+    
+    int pipefd[2];
+    pipe(pipefd); // create pipe
+    pid_t pid = fork();
 
-    std::chrono::high_resolution_clock::time_point start_time;
-    std::chrono::high_resolution_clock::time_point end_time;
+    if (pid == 0) {
+        close(pipefd[0]); // close read end
 
-    start_time = std::chrono::high_resolution_clock::now();
-    int result = EditDistanceDeleteInsert(str1, str2, algo);
-    end_time = std::chrono::high_resolution_clock::now();
+        auto start = std::chrono::high_resolution_clock::now();
+        int result = EditDistanceDeleteInsert(str1, str2, algo);
+        auto end = std::chrono::high_resolution_clock::now();
 
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
+        int64_t duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        write(pipefd[1], &duration, sizeof(duration));
+        write(pipefd[1], &result, sizeof(result));
+        close(pipefd[1]);
+        exit(0);
+    } else {
+        close(pipefd[1]); // close write end
+        int64_t duration;
+        int result;
+        read(pipefd[0], &duration, sizeof(duration));
+        read(pipefd[0], &result, sizeof(result));
+        close(pipefd[0]);
 
-    return std::make_tuple(duration.count(), 0);
+        struct rusage usage;
+        wait4(pid, nullptr, 0, &usage);
+        size_t peak_rss_bytes = usage.ru_maxrss * 1024;
+
+        return std::make_tuple(duration, peak_rss_bytes, result);
+    }
+
 }
 
 void testExtracts() {
@@ -87,6 +139,7 @@ void testExtracts() {
 
 
     
+    size_t n_tests = 5;
     size_t base_text_size = 10;
     size_t stride = 10;   // Ritmo al que growing text crece en cada test.
     size_t max_size = 1000;
@@ -102,8 +155,8 @@ void testExtracts() {
 
             std::cout << "Trying: " << base_text << "--" << growing_text << std::endl;
 
-            for (int i = 0; i < 30; ++i) {
-                size_t size = 10;
+            for (int i = 0; i < n_tests; ++i) {
+                size_t size = base_text_size;
                 while (size <= max_size) {
 
                     std::string base_content = std::get<1>(base_datum).substr(0, base_text_size);
@@ -118,6 +171,25 @@ void testExtracts() {
                     auto memo_measurements = testAlgorithm(base_content, growing_content, memo);
                     auto dp_measurements = testAlgorithm(base_content, growing_content, dp);
                     auto dpopt_measurements = testAlgorithm(base_content, growing_content, dpoptimized);
+
+                    int memo_distance = std::get<2>(memo_measurements);
+                    int dp_distance = std::get<2>(dp_measurements);
+                    int dpopt_distance = std::get<2>(dpopt_measurements);
+                    // std::cout << std::get<1>(memo_distance);
+                    
+                    //if ((memo_distance != dp_distance) || (memo_distance != dpopt_distance) || (dp_distance != dpopt_distance)) {
+                    //    std::cout << "UH OH!!!" << std::endl;
+                    //    std::cout << "Mismatch error at base_text_size: " << base_text_size <<
+                    //        ", growing_text_size: " << size << "\n";
+                    //    std::cout << "memo_distance: " << memo_distance << "\n";
+                    //    std::cout << "dp_distance: " << dp_distance << "\n";
+                    //    std::cout << "dpopt_distance: " << dpopt_distance << "\n";
+
+                    //    std::cout << "#### Contents ####" << "\n" << base_content <<
+                    //        "\n############\n" << growing_content << "\n";
+                    //    return;
+                    //}
+
                     //std::cout << "\tTime taken for memo: " << std::get<0>(memo_measurements) << std::endl;
                     //std::cout << "##########\n\n";
 
@@ -125,13 +197,13 @@ void testExtracts() {
                         memo_results, dp_results, dpopt_results;
 
                         memo_results = std::make_tuple("memo", base_text, growing_text, base_text_size, 
-                                size, std::get<0>(memo_measurements), 0);
+                                size, std::get<0>(memo_measurements), std::get<1>(memo_measurements));
 
                         dp_results = std::make_tuple("dp", base_text, growing_text, base_text_size, 
-                                size, std::get<0>(dp_measurements), 0);
+                                size, std::get<0>(dp_measurements), std::get<1>(dp_measurements));
 
                         dpopt_results = std::make_tuple("dpopt", base_text, growing_text, base_text_size, 
-                                size, std::get<0>(dpopt_measurements), 0);
+                                size, std::get<0>(dpopt_measurements), std::get<1>(dpopt_measurements));
 
                     results.push_back(memo_results);
                     results.push_back(dp_results);
