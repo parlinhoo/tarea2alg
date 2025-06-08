@@ -1,48 +1,29 @@
 #include "../inc/algorithms.h"
 
 #include <string>
+#include <vector>
+#include <iostream>
 
 int editDistanceDPOptimized(std::string str1, std::string str2) {
-    
-    std::string LCS("");
 
-    size_t cand_index1 = 0;
-    size_t cand_index2 = 0;
-    size_t index = 0;
+    size_t size1 = str1.length();
+    size_t size2 = str2.length();
 
-    while (index < str1.size() || index < str2.size()) {
-        bool found = false;
-        for (size_t i = cand_index1; i < index; i++) {
-            if (i >= str1.size() || index >= str2.size()) break;
-            if (str1[i] == str2[index]) {
-                found = true;
-                LCS.push_back(str2[index]);
-                cand_index1 = i+1;
-                cand_index2 = index+1;
-                index++;
-                break;
+    std::vector<unsigned int> upper_row(size2+1, 0);
+    std::vector<unsigned int> actual_row(size2+1, 0);
+
+    for (size_t i = 0; i < size1+1; i++) {
+        for (size_t j = 0; j < size2+1; j++) {
+            if (str1[i] == str2[j]) {
+                actual_row[j+1] = upper_row[j] + 1;
+            }
+            else {
+                actual_row[j+1] = actual_row[j] > upper_row[j+1] ? actual_row[j] : upper_row[j+1];
             }
         }
-        if (found) continue;
-        for (size_t i = cand_index2; i < index; i++) {
-            if (i >= str2.size() || index >= str1.size()) break;
-            if (str2[i] == str1[index]) {
-                found = true;
-                LCS.push_back(str1[index]);
-                cand_index1 = index+1;
-                cand_index2 = i+1;
-                index++;
-                break;
-            }
-        }
-        if (found) continue;
-        if (str1[index] == str2[index]) {
-            LCS.push_back(str1[index]);
-            cand_index1 = index+1;
-            cand_index2 = index+1;
-        }
-        index++;
+        upper_row = actual_row;
+        actual_row = std::vector<unsigned int>(size2+1, 0);
     }
 
-    return str1.size() + str2.size() - 2*LCS.size();
+    return size1 + size2 - 2*upper_row[size2];
 }
