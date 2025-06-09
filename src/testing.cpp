@@ -81,9 +81,7 @@ void testExtracts() {
     /* Pre-procesamiento */
 
     std::vector<std::string> names = {
-        "a_story_of_a_little_pet_bear",
         "gift_of_the_magi",
-        "invention_of_a_new_religion",
         "raven"
     };
 
@@ -112,86 +110,67 @@ void testExtracts() {
 
 
     
-    size_t n_tests = 30;
-    size_t base_text_size = 500;
-    size_t growing_text_size = 10;
+    size_t n_tests = 10;
+    size_t base_text_size = 10;
     size_t stride = 10;   // Ritmo al que growing text crece en cada test.
-    size_t max_size = 500;
-    for (auto base_datum : data) {
+    size_t max_size = 300;
 
-        for (auto growing_datum : data) {
-            std::string base_text = std::get<0>(base_datum);
-            std::string growing_text = std::get<0>(growing_datum);
+    auto datum_1 = data[0];
+    auto datum_2 = data[1];
+    std::string name_1 = std::get<0>(datum_1);
+    std::string name_2 = std::get<0>(datum_2);
 
-            if (base_text == growing_text) {
-                continue;
-            }
+    for (size_t n_test = 0; n_test < n_tests; ++n_test) {
+        for (size_t size_1 = base_text_size; size_1 <= max_size; size_1 += stride) {
+            std::cout << "Trying size_1: " << size_1 << std::endl;
+            for (size_t size_2 = base_text_size; size_2 <= max_size; size_2 += stride) {
+                std::string content_1 = std::get<1>(datum_1).substr(0, size_1);
+                std::string content_2 = std::get<1>(datum_2).substr(0, size_2);
 
-            std::cout << "Trying: " << base_text << "--" << growing_text << std::endl;
+                auto memo_measurements = testAlgorithm(content_1, content_2, memo);
+                auto dp_measurements = testAlgorithm(content_1, content_2, dp);
+                auto dpopt_measurements = testAlgorithm(content_1, content_2, dpoptimized);
 
-            for (size_t i = 0; i < n_tests; ++i) {
-                size_t size = growing_text_size;
-                while (size <= max_size) {
+                int memo_distance = std::get<2>(memo_measurements);
+                int dp_distance = std::get<2>(dp_measurements);
+                int dpopt_distance = std::get<2>(dpopt_measurements);
 
-                    std::string base_content = std::get<1>(base_datum).substr(0, base_text_size);
-                    std::string growing_content = std::get<1>(growing_datum).substr(0, size);
-
-
-                    //if (size <= 10) {
-                    //    auto recursive_result = testAlgorithm(base_content, growing_content, recursive);
-                    //    std::cout << "\tTime taken for recursive: " << std::get<0>(recursive_result) << std::endl;;
-                    //}
-                    //
-                    auto memo_measurements = testAlgorithm(base_content, growing_content, memo);
-                    auto dp_measurements = testAlgorithm(base_content, growing_content, dp);
-                    auto dpopt_measurements = testAlgorithm(base_content, growing_content, dpoptimized);
-
-                    int memo_distance = std::get<2>(memo_measurements);
-                    int dp_distance = std::get<2>(dp_measurements);
-                    int dpopt_distance = std::get<2>(dpopt_measurements);
-                    // std::cout << std::get<1>(memo_distance);
-                    
-                    if ((memo_distance != dp_distance) || (memo_distance != dpopt_distance) || (dp_distance != dpopt_distance)) {
+                if ((memo_distance != dp_distance) || (memo_distance != dpopt_distance)
+                        || (dp_distance != dpopt_distance)) {
                         std::cout << "UH OH!!!" << std::endl;
-                        std::cout << "Mismatch error at base_text_size: " << base_text_size <<
-                            ", growing_text_size: " << size << "\n";
+                        std::cout << "Mismatch error at size_1: " << size_1 <<
+                            ", size_2: " << size_2 << "\n";
                         std::cout << "memo_distance: " << memo_distance << "\n";
                         std::cout << "dp_distance: " << dp_distance << "\n";
                         std::cout << "dpopt_distance: " << dpopt_distance << "\n";
 
-                        std::cout << "#### Contents ####" << "\n" << base_content <<
-                            "\n############\n" << growing_content << "\n";
+                        std::cout << "#### Contents ####" << "\n" << content_1 <<
+                            "\n############\n" << content_2 << "\n";
                         return;
                     }
-
-                    //std::cout << "\tTime taken for memo: " << std::get<0>(memo_measurements) << std::endl;
-                    //std::cout << "##########\n\n";
 
                     std::tuple<std::string, std::string, std::string, size_t, size_t, size_t, size_t>
                         memo_results, dp_results, dpopt_results;
 
-                        memo_results = std::make_tuple("memo", base_text, growing_text, base_text_size, 
-                                size, std::get<0>(memo_measurements), std::get<1>(memo_measurements));
+                        memo_results = std::make_tuple("memo", name_1, name_2, size_1, 
+                                size_2, std::get<0>(memo_measurements), std::get<1>(memo_measurements));
 
-                        dp_results = std::make_tuple("dp", base_text, growing_text, base_text_size, 
-                                size, std::get<0>(dp_measurements), std::get<1>(dp_measurements));
+                        dp_results = std::make_tuple("dp", name_1, name_2, size_1, 
+                                size_2, std::get<0>(dp_measurements), std::get<1>(dp_measurements));
 
-                        dpopt_results = std::make_tuple("dpopt", base_text, growing_text, base_text_size, 
-                                size, std::get<0>(dpopt_measurements), std::get<1>(dpopt_measurements));
+                        dpopt_results = std::make_tuple("dpopt", name_1, name_2, size_1, 
+                                size_2, std::get<0>(dpopt_measurements), std::get<1>(dpopt_measurements));
 
                     results.push_back(memo_results);
                     results.push_back(dp_results);
                     results.push_back(dpopt_results);
-
-                    size = size + stride;
-                }
             }
         }
     }
 
     saveToCSV(
             results,
-            {"algorithm", "base_text", "growing_text", "base_text_size", "growing_text_size", "time", "space"},
+            {"algorithm", "text_1", "text_2", "text_1_size", "text_2_size", "time", "space"},
             "./data/results.csv"
     );
 }
