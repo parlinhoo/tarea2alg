@@ -11,33 +11,6 @@
 #include <sys/resource.h>
 #include "../inc/edit_distance.h"
 
-size_t getRSS() {
-    std::ifstream statm("/proc/self/status");
-    if (!statm) {
-        std::cerr << "Failed to open" << strerror(errno) << "\n";
-        return 0;
-    }
-
-    std::string line;
-    while (std::getline(statm, line)) {
-        if (line.find("VmRSS:", 0) == 0) {
-            std::istringstream iss(line);
-            std::string label;
-            size_t kb;
-            std::string unit;
-            iss >> label >> kb >> unit;
-            if (unit != "kB") {
-                std::cerr << "unexpected unit " << unit << "\n";
-                return 0;
-            }
-            return kb * 1024; // bytes
-        }
-    }
-
-    std::cerr << "VmRSS not found in /proc/self/status\n";
-    return 0;
-}
-
 void saveToCSV(
         std::vector<std::tuple<std::string, std::string, std::string, size_t, size_t, size_t, size_t>>&
             data,
@@ -139,10 +112,11 @@ void testExtracts() {
 
 
     
-    size_t n_tests = 5;
-    size_t base_text_size = 10;
+    size_t n_tests = 30;
+    size_t base_text_size = 500;
+    size_t growing_text_size = 10;
     size_t stride = 10;   // Ritmo al que growing text crece en cada test.
-    size_t max_size = 1000;
+    size_t max_size = 500;
     for (auto base_datum : data) {
 
         for (auto growing_datum : data) {
@@ -155,8 +129,8 @@ void testExtracts() {
 
             std::cout << "Trying: " << base_text << "--" << growing_text << std::endl;
 
-            for (int i = 0; i < n_tests; ++i) {
-                size_t size = base_text_size;
+            for (size_t i = 0; i < n_tests; ++i) {
+                size_t size = growing_text_size;
                 while (size <= max_size) {
 
                     std::string base_content = std::get<1>(base_datum).substr(0, base_text_size);
@@ -177,18 +151,18 @@ void testExtracts() {
                     int dpopt_distance = std::get<2>(dpopt_measurements);
                     // std::cout << std::get<1>(memo_distance);
                     
-                    //if ((memo_distance != dp_distance) || (memo_distance != dpopt_distance) || (dp_distance != dpopt_distance)) {
-                    //    std::cout << "UH OH!!!" << std::endl;
-                    //    std::cout << "Mismatch error at base_text_size: " << base_text_size <<
-                    //        ", growing_text_size: " << size << "\n";
-                    //    std::cout << "memo_distance: " << memo_distance << "\n";
-                    //    std::cout << "dp_distance: " << dp_distance << "\n";
-                    //    std::cout << "dpopt_distance: " << dpopt_distance << "\n";
+                    if ((memo_distance != dp_distance) || (memo_distance != dpopt_distance) || (dp_distance != dpopt_distance)) {
+                        std::cout << "UH OH!!!" << std::endl;
+                        std::cout << "Mismatch error at base_text_size: " << base_text_size <<
+                            ", growing_text_size: " << size << "\n";
+                        std::cout << "memo_distance: " << memo_distance << "\n";
+                        std::cout << "dp_distance: " << dp_distance << "\n";
+                        std::cout << "dpopt_distance: " << dpopt_distance << "\n";
 
-                    //    std::cout << "#### Contents ####" << "\n" << base_content <<
-                    //        "\n############\n" << growing_content << "\n";
-                    //    return;
-                    //}
+                        std::cout << "#### Contents ####" << "\n" << base_content <<
+                            "\n############\n" << growing_content << "\n";
+                        return;
+                    }
 
                     //std::cout << "\tTime taken for memo: " << std::get<0>(memo_measurements) << std::endl;
                     //std::cout << "##########\n\n";

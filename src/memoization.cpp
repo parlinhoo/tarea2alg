@@ -1,22 +1,24 @@
 #include "../inc/algorithms.h"
 #include <utility>
 #include <map>
+#include <vector>
+#include <iostream>
 
 std::string recursiveLCSMemo(std::string str1, std::string str2,
         size_t str1_len, size_t str2_len,
-        std::map<std::pair<size_t, size_t>, std::string>& lcs_memo) {
+        std::vector<std::vector<std::pair<bool, std::string>>>& lcs_memo) {
     if (!str1_len || !str2_len) {
         return "";
     } else if (str1[str1_len - 1] == str2[str2_len - 1]) {
         char& last_char = str1[str1_len - 1];
         std::string ret_string;
 
-        auto key = std::make_pair(str1_len - 1, str2_len - 1);
-        if (lcs_memo.count(key)) {
-            ret_string = lcs_memo[key];
+        if (std::get<0>(lcs_memo[str1_len - 1][str2_len - 1])) {
+            ret_string = std::get<1>(lcs_memo[str1_len - 1][str2_len - 1]);
         } else {
             ret_string = recursiveLCSMemo(str1, str2, str1_len - 1, str2_len - 1, lcs_memo);
-            lcs_memo[key] = ret_string;
+            auto element = std::make_pair(true, ret_string);
+            lcs_memo[str1_len - 1][str2_len - 1] = element;
         }
 
         ret_string.push_back(last_char);
@@ -24,21 +26,20 @@ std::string recursiveLCSMemo(std::string str1, std::string str2,
     } else {
         std::string res_1, res_2;
 
-        auto res_1_key = std::make_pair(str1_len - 1, str2_len);
-        auto res_2_key = std::make_pair(str1_len , str2_len - 1);
-        
-        if (lcs_memo.count(res_1_key)) {
-            res_1 = lcs_memo[res_1_key];
+        if (std::get<0>(lcs_memo[str1_len - 1][str2_len])) {
+            res_1 = std::get<1>(lcs_memo[str1_len - 1][str2_len]);
         } else {
             res_1 = recursiveLCSMemo(str1, str2, str1_len - 1, str2_len, lcs_memo);
-            lcs_memo[res_1_key] = res_1;
+            auto element = std::make_pair(true, res_1);
+            lcs_memo[str1_len - 1][str2_len] = element;
         }
 
-        if (lcs_memo.count(res_2_key)) {
-            res_2 = lcs_memo[res_2_key];
+        if (std::get<0>(lcs_memo[str1_len][str2_len - 1])) {
+            res_2 = std::get<1>(lcs_memo[str1_len][str2_len - 1]);
         } else {
             res_2 = recursiveLCSMemo(str1, str2, str1_len, str2_len - 1, lcs_memo);
-            lcs_memo[res_2_key] = res_2;
+            auto element = std::make_pair(true, res_2);
+            lcs_memo[str1_len][str2_len - 1] = element;
         }
 
         if (res_1.size() > res_2.size()) {
@@ -50,7 +51,15 @@ std::string recursiveLCSMemo(std::string str1, std::string str2,
 }
 
 std::string LCSMemo(std::string str1, std::string str2) {
-    std::map<std::pair<size_t, size_t>, std::string> lcs_memo;
+    std::vector<std::vector<std::pair<bool, std::string>>> lcs_memo;
+    for (size_t i = 0; i <= str1.size(); ++i) {
+        std::vector<std::pair<bool, std::string>> row;
+        for (size_t j = 0; j <= str2.size(); ++j) {
+            auto element = std::make_pair(false, "");
+            row.push_back(element);
+        }
+        lcs_memo.push_back(row);
+    }
     return recursiveLCSMemo(str1, str2, str1.size(), str2.size(), lcs_memo);
 }
 
